@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>General Journal System</title>
+
+<style>
+    *{
+        margin:0;
+        padding:0;
+        box-sizing:border-box;
+        font-family:Arial, sans-serif;
+    }
+
+    body{
+        background:#f4f6f9;
+        padding:20px;
+    }
+
+    .container{
+        max-width:1400px;
+        margin:auto;
+        background:#fff;
+        padding:20px;
+        border-radius:10px;
+        box-shadow:0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    h1{
+        text-align:center;
+        margin-bottom:20px;
+        color:#333;
+    }
+
+    .controls{
+        display:flex;
+        flex-wrap:wrap;
+        gap:10px;
+        margin-bottom:20px;
+        justify-content:space-between;
+    }
+
+    .left-controls,
+    .right-controls{
+        display:flex;
+        gap:10px;
+        flex-wrap:wrap;
+    }
+
+    button{
+        padding:10px 15px;
+        border:none;
+        border-radius:6px;
+        cursor:pointer;
+        color:#fff;
+        font-weight:bold;
+        transition:0.3s;
+    }
+
+    .add-btn{
+        background:#28a745;
+    }
+
+    .add-btn:hover{
+        background:#218838;
+    }
+
+    .export-btn{
+        background:#007bff;
+    }
+
+    .export-btn:hover{
+        background:#0069d9;
+    }
+
+    .print-btn{
+        background:#6c757d;
+    }
+
+    .print-btn:hover{
+        background:#5a6268;
+    }
+
+    .clear-btn{
+        background:#dc3545;
+    }
+
+    .clear-btn:hover{
+        background:#c82333;
+    }
+
+    table{
+        width:100%;
+        border-collapse:collapse;
+        min-width:1200px;
+    }
+
+    th, td{
+        border:1px solid #ddd;
+        padding:10px;
+        text-align:center;
+    }
+
+    th{
+        background:#343a40;
+        color:#fff;
+    }
+
+    input, select{
+        width:100%;
+        padding:8px;
+        border:1px solid #ccc;
+        border-radius:4px;
+    }
+
+    .delete-btn{
+        background:#dc3545;
+        padding:8px 12px;
+        border:none;
+        border-radius:5px;
+        color:white;
+        cursor:pointer;
+    }
+
+    .delete-btn:hover{
+        background:#b52a37;
+    }
+
+    .summary{
+        margin-top:20px;
+        display:flex;
+        gap:20px;
+        flex-wrap:wrap;
+    }
+
+    .card{
+        flex:1;
+        min-width:200px;
+        background:#f8f9fa;
+        padding:15px;
+        border-radius:8px;
+        border-left:5px solid #007bff;
+    }
+
+    .card h3{
+        margin-bottom:10px;
+        color:#333;
+    }
+
+    .card p{
+        font-size:20px;
+        font-weight:bold;
+        color:#007bff;
+    }
+
+    @media print{
+        .controls,
+        .delete-btn{
+            display:none;
+        }
+
+        body{
+            background:white;
+        }
+
+        .container{
+            box-shadow:none;
+        }
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <h1>General Journal System</h1>
+
+    <div class="controls">
+
+        <div class="left-controls">
+            <button class="add-btn" onclick="addRow()">Add Entry</button>
+            <button class="export-btn" onclick="exportExcel()">Export Excel</button>
+            <button class="print-btn" onclick="window.print()">Print</button>
+            <button class="clear-btn" onclick="clearAll()">Clear All</button>
+        </div>
+
+    </div>
+
+    <div style="overflow-x:auto;">
+        <table id="journalTable">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Account Title</th>
+                    <th>Description</th>
+                    <th>Reference</th>
+                    <th>Debit</th>
+                    <th>Credit</th>
+                    <th>Category</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody id="tableBody">
+            </tbody>
+        </table>
+    </div>
+
+    <div class="summary">
+        <div class="card">
+            <h3>Total Debit</h3>
+            <p id="totalDebit">0</p>
+        </div>
+
+        <div class="card">
+            <h3>Total Credit</h3>
+            <p id="totalCredit">0</p>
+        </div>
+
+        <div class="card">
+            <h3>Balance</h3>
+            <p id="balance">0</p>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<script>
+
+const tableBody = document.getElementById("tableBody");
+
+function createRow() {
+
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+        <td><input type="date"></td>
+
+        <td>
+            <input type="text" placeholder="Account Title">
+        </td>
+
+        <td>
+            <input type="text" placeholder="Description">
+        </td>
+
+        <td>
+            <input type="text" placeholder="Reference">
+        </td>
+
+        <td>
+            <input type="number" class="debit" min="0" placeholder="0">
+        </td>
+
+        <td>
+            <input type="number" class="credit" min="0" placeholder="0">
+        </td>
+
+        <td>
+            <select>
+                <option value="">Select</option>
+                <option>Assets</option>
+                <option>Liabilities</option>
+                <option>Equity</option>
+                <option>Revenue</option>
+                <option>Expense</option>
+            </select>
+        </td>
+
+        <td>
+            <button class="delete-btn" onclick="deleteRow(this)">Delete</button>
+        </td>
+    `;
+
+    const inputs = row.querySelectorAll("input, select");
+
+    inputs.forEach(input => {
+        input.addEventListener("input", calculateTotals);
+    });
+
+    return row;
+}
+
+function isRowFilled(row){
+
+    const inputs = row.querySelectorAll("input, select");
+
+    for(let input of inputs){
+
+        if(input.type === "button") continue;
+
+        if(input.value.trim() === ""){
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function addRow(){
+
+    const rows = tableBody.querySelectorAll("tr");
+
+    // If no rows exist
+    if(rows.length === 0){
+        tableBody.appendChild(createRow());
+        return;
+    }
+
+    // Check last row
+    const lastRow = rows[rows.length - 1];
+
+    if(!isRowFilled(lastRow)){
+        alert("Please fill the current row completely before adding a new entry.");
+        return;
+    }
+
+    tableBody.appendChild(createRow());
+}
+
+function deleteRow(btn){
+    btn.closest("tr").remove();
+    calculateTotals();
+}
+
+function calculateTotals(){
+
+    let totalDebit = 0;
+    let totalCredit = 0;
+
+    document.querySelectorAll(".debit").forEach(input => {
+        totalDebit += Number(input.value) || 0;
+    });
+
+    document.querySelectorAll(".credit").forEach(input => {
+        totalCredit += Number(input.value) || 0;
+    });
+
+    document.getElementById("totalDebit").innerText = totalDebit.toFixed(2);
+    document.getElementById("totalCredit").innerText = totalCredit.toFixed(2);
+
+    const balance = totalDebit - totalCredit;
+
+    document.getElementById("balance").innerText = balance.toFixed(2);
+}
+
+function exportExcel(){
+
+    const rows = tableBody.querySelectorAll("tr");
+
+    if(rows.length === 0){
+        alert("No records available to export.");
+        return;
+    }
+
+    let data = [];
+
+    rows.forEach(row => {
+
+        const inputs = row.querySelectorAll("input, select");
+
+        const rowData = {
+            Date: inputs[0].value,
+            AccountTitle: inputs[1].value,
+            Description: inputs[2].value,
+            Reference: inputs[3].value,
+            Debit: inputs[4].value,
+            Credit: inputs[5].value,
+            Category: inputs[6].value
+        };
+
+        // Export only rows having some data
+        const hasData = Object.values(rowData).some(value => value !== "");
+
+        if(hasData){
+            data.push(rowData);
+        }
+    });
+
+    if(data.length === 0){
+        alert("Please enter some records before exporting.");
+        return;
+    }
+
+    // Add summary
+    data.push({});
+    data.push({
+        Date: "TOTAL",
+        Debit: document.getElementById("totalDebit").innerText,
+        Credit: document.getElementById("totalCredit").innerText
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "General Journal");
+
+    XLSX.writeFile(workbook, "General_Journal.xlsx");
+}
+
+function clearAll(){
+
+    const confirmClear = confirm("Are you sure you want to clear all records?");
+
+    if(confirmClear){
+        tableBody.innerHTML = "";
+        calculateTotals();
+    }
+}
+
+// Initial row
+tableBody.appendChild(createRow());
+
+</script>
+
+</body>
+</html>
